@@ -131,10 +131,36 @@ local function drawDistanceAdjustment(dt)
   ac.setOnboardCameraParams(0, cam_params)
 end
 
-
 local presets = {}
 local preset_name = 'New Preset'
 local selected_preset = nil
+
+local function camParamsToTable(params, fov)
+  return {
+    position = params.position,
+    pitch = params.pitch,
+    yaw = params.yaw,
+    fov = fov
+  }
+end
+
+local function applyCamParamsFromTable(params_table)
+  local cam_params = ac.getOnboardCameraParams(0)
+  cam_params.position = params_table.position
+  cam_params.pitch = params_table.pitch
+  cam_params.yaw = params_table.yaw
+  ac.setOnboardCameraParams(0, cam_params)
+  ac.setFirstPersonCameraFOV(params_table.fov)
+end
+
+local function paramsChanged(params_from_preset)
+  local current_params = ac.getOnboardCameraParams(0)
+  local current_fov = ac.getCameraFOV()
+  return not current_params.position:closerToThan(params_from_preset.position, 0.01) or
+         math.abs(current_params.pitch - params_from_preset.pitch) > 0.1 or
+         math.abs(current_params.yaw - params_from_preset.yaw) > 0.1 or
+         math.abs(current_fov - params_from_preset.fov) > 0.1
+end
 
 function script.windowMain(dt)
   local cam_params = ac.getOnboardCameraParams(0)
@@ -193,11 +219,27 @@ function script.windowMain(dt)
 
   ui.sameLine()
 
+  local didParamsChange = false
+
+  -- If current camera params differ from selected preset, show asterisk
+  if selected_preset then
+    local preset_params = nil
+    for i, preset in ipairs(presets) do
+      if preset.name == selected_preset then
+        preset_params = preset.params
+        break
+      end
+    end
+    if preset_params and paramsChanged(preset_params) then
+      didParamsChange = true
+    end
+  end
+
   -- Draw presets dropdown
   if ui.beginCombo('##ViewPresets', selected_preset or 'Select Preset') then
     for i, preset in ipairs(presets) do
       if ui.selectable(preset.name, preset_name == preset.name) then
-        ac.setOnboardCameraParams(0, preset.params)
+        applyCamParamsFromTable(preset.params)
         preset_name = preset.name
         selected_preset = preset.name
       end
@@ -205,14 +247,26 @@ function script.windowMain(dt)
     ui.endCombo()
   end
 
-  local save_btn_label = preset_exists and 'Update Preset' or 'Save Preset'
+  local update_label = didParamsChange and preset_exists and 'Update Preset*' or 'Update Preset'
+  local save_btn_label = preset_exists and update_label or 'Save Preset'
   if ui.button(save_btn_label, vec2(ui.availableSpaceX() / 2, 0)) then
     local preset_to_save = {}
     preset_to_save.name = preset_name
-    preset_to_save.params = cam_params
-    table.insert(presets, preset_to_save)
+    preset_to_save.params = camParamsToTable(ac.getOnboardCameraParams(0), ac.getCameraFOV())
+
+     -- If preset with the same name exists, update it, otherwise add new preset
+    local preset_exists = false
+    for i, preset in ipairs(presets) do
+      if preset.name == preset_name then
+        presets[i] = preset_to_save
+        preset_exists = true
+        break
+      end
+    end
+    if not preset_exists then
+      table.insert(presets, preset_to_save)
+    end
     selected_preset = preset_name
-    preset_name = 'Preset ' .. #presets
   end
 
   ui.sameLine()
@@ -221,9 +275,24 @@ function script.windowMain(dt)
     ac.setOnboardCameraParams(0, cam_params, true)
   end
 
-  if ui.button('Reset from Car.ini', vec2(ui.availableSpaceX(), 0)) then
+  if ui.button('Reset from Car.ini', vec2(ui.availableSpaceX() / 2, 0)) then
     ac.setOnboardCameraParams(0, ac.getOnboardCameraDefaultParams(0))
     ac.resetFirstPersonCameraFOV()
+  end 
+
+  ui.sameLine()
+
+  if ui.button('Delete Preset', vec2(ui.availableSpaceX(), 0)) then
+    if selected_preset then
+      for i, preset in ipairs(presets) do
+        if preset.name == selected_preset then
+          table.remove(presets, i)
+          break
+        end
+      end
+      selected_preset = nil
+      preset_name = 'New Preset'
+    end
   end
 
 end
