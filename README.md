@@ -1,4 +1,6 @@
 # Onboard App 2 for Assetto Corsa
+[![Download](https://img.shields.io/badge/Download-Latest-blue)](https://github.com/neonoxd/ac-onboard-app-lua/releases/latest)
+
 <img width="653" height="294" alt="acs_hpZDy1BjpP" src="https://github.com/user-attachments/assets/b4b1c687-2e7a-4fbf-9e01-eb9212ef506f" />
 
 ## Overview
