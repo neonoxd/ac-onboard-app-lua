@@ -14,7 +14,8 @@ local cam_dragging = false
 local joystick_offset = vec2(0, 0)
 local function drawSeatPositionAdjustment(dt)
   local cam_params = ac.getOnboardCameraParams(0)
-    -- Draw Square
+  ui.text('Position')
+  -- Draw Square
   local curs = ui.getCursor()
   local bg_size = vec2(128, 128)
   ui.drawRectFilled(curs, curs + bg_size, rgbm(0.1, 0.1, 0.1, 1), 3)
@@ -67,6 +68,7 @@ local pitch_dragging = false
 local pitch_offset = vec2(0, 0)
 local function drawPitchAdjustment(dt)
   local cam_params = ac.getOnboardCameraParams(0)
+  ui.text('Pitch')
   -- Vertical Pitch Slider
   local p_curs = ui.getCursor()
   local p_bg_size = vec2(24, 128)
@@ -260,19 +262,21 @@ function script.windowMain(dt)
 
     -- Right side group for FoV, Distance, Pitch settings
     ui.beginGroup()
+      drawDistanceAdjustment(dt)
+      ui.textWrapped('Position'.. string.format(' (%.3f, %.3f, %.3f)', cam_params.position.x, cam_params.position.y, cam_params.position.z))
+      ui.textWrapped('Pitch: ' .. string.format('%.3f', cam_params.pitch))
+      ui.offsetCursorY(8)
+
       -- FoV slider
-      ui.text('FoV')
+      ui.text('Field of View')
       local new_fov, fov_changed = ui.slider('##FoV', ac.getCameraFOV(), 30, 120, '%.3f', true)
       ac.debug('New fov', new_fov)
       if fov_changed then
         ac.setFirstPersonCameraFOV(new_fov)
       end
-      drawDistanceAdjustment(dt)
-
-      ui.textWrapped('Position'.. string.format(' (%.3f, %.3f, %.3f)', cam_params.position.x, cam_params.position.y, cam_params.position.z))
-      ui.textWrapped('Pitch: ' .. string.format('%.3f', cam_params.pitch))
 
     ui.endGroup()
+    ui.offsetCursorX(32)
 
   ui.endGroup()
 
@@ -320,10 +324,17 @@ function script.windowMain(dt)
     ui.endCombo()
   end
 
+  if ui.button("Set as Default", vec2(ui.availableSpaceX() / 2, 0)) then
+    ac.setOnboardCameraParams(0, cam_params, true)
+    ui.toast(ui.Icons.Info, 'Current camera position saved to view.ini')
+  end
+
+  ui.sameLine()
+
   -- Save Preset
   local update_label = didParamsChange and p_exist and 'Update Preset*' or 'Update Preset'
   local save_btn_label = p_exist and update_label or 'Save Preset'
-  if ui.button(save_btn_label, vec2(ui.availableSpaceX() / 2, 0)) then
+  if ui.button(save_btn_label, vec2(ui.availableSpaceX(), 0)) then
     local preset_to_save = {}
     preset_to_save.name = preset_text_field_value
     preset_to_save.params = camParamsToTable(ac.getOnboardCameraParams(0), ac.getCameraFOV())
@@ -341,13 +352,6 @@ function script.windowMain(dt)
     end
     selected_preset = preset_text_field_value
     savePresets()
-  end
-
-  ui.sameLine()
-
-  if ui.button("Set as Default", vec2(ui.availableSpaceX(), 0)) then
-    ac.setOnboardCameraParams(0, cam_params, true)
-    ui.toast(ui.Icons.Info, 'Current camera position saved to view.ini')
   end
 
   if ui.button('Reset from Car.ini', vec2(ui.availableSpaceX() / 2, 0)) then
