@@ -6,6 +6,15 @@ local selected_preset = nil
 local distance_offset = vec2(0, 0)
 local pitch_offset = vec2(0, 0)
 
+local cam_drag_start_pos = vec2(0, 0)
+local cam_dragging = false
+
+local pitch_drag_start_pos = vec2(0, 0)
+local pitch_dragging = false
+
+local distance_drag_start_pos = vec2(0, 0)
+local distance_dragging = false
+
 function script.windowMain(dt)
   local cam_params = ac.getOnboardCameraParams(0)
 
@@ -35,9 +44,16 @@ function script.windowMain(dt)
       end
       if ui.itemActive() then
         local mouse_pos = ui.mouseLocalPos()
-        ac.debug('Mouse position: ', mouse_pos)
-        local delta = mouse_pos - center
-        cam_params.position = cam_params.position + vec3(-delta.x * 0.01 * dt, -delta.y * 0.01 * dt, 0)
+        
+        if not cam_dragging then
+          cam_dragging = true
+          cam_drag_start_pos = mouse_pos
+        end
+
+        local delta = mouse_pos - cam_drag_start_pos
+        cam_params.position = cam_params.position + vec3(-delta.x * 0.1 * dt, -delta.y * 0.1 * dt, 0)
+        cam_drag_start_pos = mouse_pos
+
         -- Clamp the circle position to the square
         local max_offset = bg_size / 2 - vec2(radius, radius)
         joystick_offset = vec2(
@@ -45,6 +61,9 @@ function script.windowMain(dt)
           math.max(-max_offset.y, math.min(max_offset.y, delta.y))
         )
         ui.setMouseCursor(ui.MouseCursor.ResizeAll)
+      end
+      if not ui.itemActive() then
+        cam_dragging = false
       end
 
       joystick_offset = joystick_offset * 0.9
@@ -57,22 +76,32 @@ function script.windowMain(dt)
     ui.beginGroup()
     -- Vertical Pitch Slider
       local p_curs = ui.getCursor()
-      local p_bg_size = vec2(16, 128)
+      local p_bg_size = vec2(24, 128)
       ui.drawRectFilled(p_curs, p_curs + p_bg_size, rgbm(0.1, 0.1, 0.1, 1), 3)
       -- Joystick
-      ui.drawCircleFilled(p_curs + p_bg_size:scale(0.5) + pitch_offset, 8, rgbm(1, 0, 0, 1))
+      ui.drawCircleFilled(p_curs + vec2(p_bg_size.x / 2, p_bg_size.y / 2) + pitch_offset, 8, rgbm(1, 0, 0, 1))
 
-      ui.setCursor(p_curs + vec2(0, 60))
-      ui.invisibleButton('##pitch', vec2(16, 16))
+      ui.setCursor(p_curs)
+      ui.invisibleButton('##pitch', p_bg_size)
       if ui.itemHovered() then
         ui.setMouseCursor(ui.MouseCursor.ResizeNS)
       end
 
       if ui.itemActive() then
         local mouse_pos = ui.mouseLocalPos()
-        local delta = mouse_pos.y - (p_curs.y + 60)
-        cam_params.pitch = cam_params.pitch - delta * 0.2 * dt
-        pitch_offset = vec2(0, delta)
+
+        if not pitch_dragging then
+          pitch_dragging = true
+          pitch_drag_start_pos = mouse_pos
+        end
+
+        local delta = mouse_pos - pitch_drag_start_pos
+        cam_params.pitch = cam_params.pitch - delta.y * 1.5 * dt
+        pitch_offset = vec2(0, delta.y)
+        pitch_drag_start_pos = mouse_pos
+      end
+      if not ui.itemActive() then
+        pitch_dragging = false
       end
       pitch_offset = pitch_offset * 0.6
       ui.offsetCursorX(24)
@@ -94,22 +123,32 @@ function script.windowMain(dt)
 
       local d_curs = ui.getCursor()
       local d_width = ui.availableSpaceX()
-      local d_bg_size = vec2(d_width, 16)
+      local d_bg_size = vec2(d_width, 24)
       ui.drawRectFilled(d_curs, d_curs + d_bg_size, rgbm(0.1, 0.1, 0.1, 1), 3)
       -- Joystick
-      ui.drawCircleFilled(d_curs + vec2(d_width / 2, 8) + distance_offset, 8, rgbm(1, 0, 0, 1))
+      ui.drawCircleFilled(d_curs + vec2(d_width / 2, 12) + distance_offset, 8, rgbm(1, 0, 0, 1))
 
-      ui.setCursor(d_curs + vec2(d_width / 2.05, 0))
-      ui.invisibleButton('##distance', vec2(16, 16))
+      ui.setCursor(d_curs)
+      ui.invisibleButton('##distance', d_bg_size)
       if ui.itemHovered() then
         ui.setMouseCursor(ui.MouseCursor.ResizeEW)
       end
 
       if ui.itemActive() then
         local mouse_pos = ui.mouseLocalPos()
-        local delta = mouse_pos.x - (d_curs.x + d_width / 2)
-        cam_params.position = cam_params.position + vec3(0, 0, delta * 0.01 * dt)
-        distance_offset = vec2(delta, 0)
+
+        if not distance_dragging then
+          distance_dragging = true
+          distance_drag_start_pos = mouse_pos
+        end
+
+        local delta = mouse_pos - distance_drag_start_pos
+        cam_params.position = cam_params.position + vec3(0, 0, delta.x * 0.1 * dt)
+        distance_offset = vec2(delta.x, 0)
+        distance_drag_start_pos = mouse_pos
+      end
+      if not ui.itemActive() then
+        distance_dragging = false
       end
       distance_offset = distance_offset * 0.6
 
