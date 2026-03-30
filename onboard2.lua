@@ -28,9 +28,6 @@ local function drawSeatPositionAdjustment(dt)
   ui.setCursor(curs)
   ui.invisibleButton('joystick', bg_size)
   -- If the invisible button is held, move the circle with the mouse
-  if ui.itemHovered() then
-    ui.setMouseCursor(ui.MouseCursor.ResizeAll)
-  end
   if ui.itemActive() then
     local mouse_pos = ui.mouseLocalPos()
     
@@ -53,6 +50,9 @@ local function drawSeatPositionAdjustment(dt)
   end
   if not ui.itemActive() then
     cam_dragging = false
+    if ui.itemHovered() then
+      ui.setMouseCursor(ui.MouseCursor.ResizeAll)
+    end
   end
 
   joystick_offset = joystick_offset * 0.9
@@ -78,9 +78,6 @@ local function drawPitchAdjustment(dt)
 
   ui.setCursor(p_curs)
   ui.invisibleButton('##pitch', p_bg_size)
-  if ui.itemHovered() then
-    ui.setMouseCursor(ui.MouseCursor.ResizeNS)
-  end
 
   if ui.itemActive() then
     local mouse_pos = ui.mouseLocalPos()
@@ -94,10 +91,13 @@ local function drawPitchAdjustment(dt)
     cam_params.pitch = cam_params.pitch - delta.y * 1.5 * dt
     pitch_offset = vec2(0, delta.y)
     pitch_drag_start_pos = mouse_pos
-  end
-  if not ui.itemActive() then
+  elseif not ui.itemActive() then
     pitch_dragging = false
+    if ui.itemHovered() then
+      ui.setMouseCursor(ui.MouseCursor.ResizeNS)
+    end
   end
+
   pitch_offset = pitch_offset * 0.6
   if pitch_offset:closerToThan(vec2(0, 0), 1) then
     pitch_offset = vec2(0, 0)
@@ -123,9 +123,6 @@ local function drawDistanceAdjustment(dt)
 
   ui.setCursor(d_curs)
   ui.invisibleButton('##distance', d_bg_size)
-  if ui.itemHovered() then
-    ui.setMouseCursor(ui.MouseCursor.ResizeEW)
-  end
 
   if ui.itemActive() then
     local mouse_pos = ui.mouseLocalPos()
@@ -142,6 +139,9 @@ local function drawDistanceAdjustment(dt)
   end
   if not ui.itemActive() then
     distance_dragging = false
+    if ui.itemHovered() then
+      ui.setMouseCursor(ui.MouseCursor.ResizeEW)
+    end
   end
   distance_offset = distance_offset * 0.6
   if distance_offset:closerToThan(vec2(0, 0), 1) then
@@ -242,6 +242,10 @@ function script.windowMain(dt)
   ac.debug('Camera yaw: ', cam_params.yaw)
   ac.debug('Presets: ', onboard_presets)
   ac.debug('current car', car_id)
+
+  if cam_dragging or pitch_dragging or distance_dragging then
+    ac.hideMouseCursor(true)
+  end
 
   ui.beginGroup()
 
