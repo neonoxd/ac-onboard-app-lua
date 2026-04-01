@@ -102,7 +102,7 @@ local function drawSeatPositionAdjustment(dt)
     joystick_offset = vec2(0, 0)
   end
 
-  ac.setOnboardCameraParams(0, cam_params, false)
+  ac.setOnboardCameraParams(0, cam_params, true)
 end
 
 local pitch_drag_start_pos = vec2(0, 0)
@@ -371,14 +371,14 @@ function script.windowMain(dt)
   end
 
   if ui.button("Set as Default", vec2(ui.availableSpaceX() / 2, 0)) then
-    local params = ac.getOnboardCameraParams(0)
+    --[[ local params = ac.getOnboardCameraParams(0)
     local cfg_path = car_cfg_dir .. '\\view.ini'
     local iniConfig = ac.INIConfig.load(cfg_path, ac.INIFormat.Default)
     local eyes_str = string.format('%f,%f,%f', params.position.x, params.position.y, params.position.z)
 
     iniConfig:setAndSave('CAMERA', 'ON_BOARD_PITCH_ANGLE', params.pitch)
-    iniConfig:setAndSave('DRIVER_EYES_POSITION', 'DRIVEREYES', eyes_str)
-
+    iniConfig:setAndSave('DRIVER_EYES_POSITION', 'DRIVEREYES', eyes_str) ]]
+    ac.setOnboardCameraParams(0, cam_params, true)
     ui.toast(ui.Icons.Info, 'Current camera position saved to view.ini')
   end
 
