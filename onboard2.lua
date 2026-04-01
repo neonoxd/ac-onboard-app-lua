@@ -46,6 +46,14 @@ local function drawSeatPositionAdjustment(dt)
   -- Draw Square
   local curs = ui.getCursor()
   ui.drawRectFilled(curs, curs + bg_size, rgbm(0.1, 0.1, 0.1, 1), 3)
+
+  -- Draw crosshairs
+  local selected_color = rgbm(0.3, 0.3, 0.8, 1)
+  ui.drawLine(curs + vec2(bg_size.x / 2, 0),
+              curs + vec2(bg_size.x / 2, bg_size.y), split_mode == "y" and selected_color or rgbm(0.3, 0.3, 0.3, 1))
+              
+  ui.drawLine(curs + vec2(0, bg_size.y / 2),
+              curs + vec2(bg_size.x, bg_size.y / 2), split_mode == "x" and selected_color or rgbm(0.3, 0.3, 0.3, 1))
   
   -- Draw Circle in the middle of the square
   local center = curs + bg_size / 2 + joystick_offset
