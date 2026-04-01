@@ -371,14 +371,13 @@ function script.windowMain(dt)
   end
 
   if ui.button("Set as Default", vec2(ui.availableSpaceX() / 2, 0)) then
-    --[[ local params = ac.getOnboardCameraParams(0)
     local cfg_path = car_cfg_dir .. '\\view.ini'
     local iniConfig = ac.INIConfig.load(cfg_path, ac.INIFormat.Default)
-    local eyes_str = string.format('%f,%f,%f', params.position.x, params.position.y, params.position.z)
+    local eyes_str = string.format('%f,%f,%f', cam_params.position.x, cam_params.position.y, cam_params.position.z)
+    local pitch_in_degrees = cam_params.pitch * math.pi / 180
 
-    iniConfig:setAndSave('CAMERA', 'ON_BOARD_PITCH_ANGLE', params.pitch)
-    iniConfig:setAndSave('DRIVER_EYES_POSITION', 'DRIVEREYES', eyes_str) ]]
-    ac.setOnboardCameraParams(0, cam_params, true)
+    iniConfig:setAndSave('CAMERA', 'ON_BOARD_PITCH_ANGLE', pitch_in_degrees)
+    iniConfig:setAndSave('DRIVER_EYES_POSITION', 'DRIVEREYES', eyes_str)
     ui.toast(ui.Icons.Info, 'Current camera position saved to view.ini')
   end
 
@@ -422,7 +421,7 @@ function script.windowMain(dt)
       iniConfig:get('DRIVER_EYES_POSITION', 'DRIVEREYES', '', 3)
     local eyes = vec3(tonumber(eyes_x), tonumber(eyes_y), tonumber(eyes_z))
 
-    local seat_params = ac.SeatParams(eyes, tonumber(pitch_cfg), 0)
+    local seat_params = ac.SeatParams(eyes, tonumber(pitch_cfg) * 180 / math.pi, 0)
     ac.setOnboardCameraParams(0, seat_params, false)
   end
 
