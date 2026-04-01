@@ -1,3 +1,5 @@
+local car_cfg_dir = ac.getFolder(ac.FolderID.Cfg) .. '\\cars\\' .. ac.getCarID(0)
+
 local function deepCopy(t)
   if vec3.isvec3(t) then return vec3(t.x, t.y, t.z) end
   if vec2.isvec2(t) then return vec2(t.x, t.y) end
@@ -100,7 +102,7 @@ local function drawSeatPositionAdjustment(dt)
     joystick_offset = vec2(0, 0)
   end
 
-  ac.setOnboardCameraParams(0, cam_params)
+  ac.setOnboardCameraParams(0, cam_params, false)
 end
 
 local pitch_drag_start_pos = vec2(0, 0)
@@ -142,7 +144,7 @@ local function drawPitchAdjustment(dt)
   if pitch_offset:closerToThan(vec2(0, 0), 1) then
     pitch_offset = vec2(0, 0)
   end
-  ac.setOnboardCameraParams(0, cam_params)
+  ac.setOnboardCameraParams(0, cam_params, false)
 end
 
 local distance_drag_start_pos = vec2(0, 0)
@@ -187,7 +189,7 @@ local function drawDistanceAdjustment(dt)
   if distance_offset:closerToThan(vec2(0, 0), 1) then
     distance_offset = vec2(0, 0)
   end
-  ac.setOnboardCameraParams(0, cam_params)
+  ac.setOnboardCameraParams(0, cam_params, false)
 end
 
 local onboard_presets = {}
@@ -209,7 +211,7 @@ local function applyCamParamsFromTable(params_table)
   local table_copy = deepCopy(params_table)
   cam_params.position = table_copy.position
   cam_params.pitch = table_copy.pitch
-  ac.setOnboardCameraParams(0, cam_params)
+  ac.setOnboardCameraParams(0, cam_params, false)
   ac.setFirstPersonCameraFOV(table_copy.fov)
 end
 
@@ -369,7 +371,14 @@ function script.windowMain(dt)
   end
 
   if ui.button("Set as Default", vec2(ui.availableSpaceX() / 2, 0)) then
-    ac.setOnboardCameraParams(0, cam_params, true)
+    local params = ac.getOnboardCameraParams(0)
+    local cfg_path = car_cfg_dir .. '\\view.ini'
+    local iniConfig = ac.INIConfig.load(cfg_path, ac.INIFormat.Default)
+    local eyes_str = string.format('%f,%f,%f', params.position.x, params.position.y, params.position.z)
+
+    iniConfig:setAndSave('CAMERA', 'ON_BOARD_PITCH_ANGLE', params.pitch)
+    iniConfig:setAndSave('DRIVER_EYES_POSITION', 'DRIVEREYES', eyes_str)
+
     ui.toast(ui.Icons.Info, 'Current camera position saved to view.ini')
   end
 
@@ -398,10 +407,24 @@ function script.windowMain(dt)
     savePresets()
   end
 
-  if ui.button('Reset from Car.ini', vec2(ui.availableSpaceX() / 2, 0)) then
-    ac.setOnboardCameraParams(0, ac.getOnboardCameraDefaultParams(0))
+  local w = ui.availableSpaceX() / 4
+  if ui.button('Reset from Car.ini', vec2(w, 0)) then
+    ac.setOnboardCameraParams(0, ac.getOnboardCameraDefaultParams(0), false)
     ac.resetFirstPersonCameraFOV()
-  end 
+  end
+  ui.sameLine()
+  if ui.button('View.ini', vec2(w - 8, 0)) then
+    local cfg_path = car_cfg_dir .. '\\view.ini'
+    local iniConfig = ac.INIConfig.load(cfg_path, ac.INIFormat.Extended)
+    local pitch_cfg = iniConfig:get('CAMERA', 'ON_BOARD_PITCH_ANGLE', '')
+    local eyes_x, eyes_y, eyes_z = iniConfig:get('DRIVER_EYES_POSITION', 'DRIVEREYES', '', 1), 
+      iniConfig:get('DRIVER_EYES_POSITION', 'DRIVEREYES', '', 2), 
+      iniConfig:get('DRIVER_EYES_POSITION', 'DRIVEREYES', '', 3)
+    local eyes = vec3(tonumber(eyes_x), tonumber(eyes_y), tonumber(eyes_z))
+
+    local seat_params = ac.SeatParams(eyes, tonumber(pitch_cfg), 0)
+    ac.setOnboardCameraParams(0, seat_params, false)
+  end
 
   ui.sameLine()
 
@@ -416,7 +439,7 @@ function script.windowMain(dt)
       selected_preset = nil
       preset_text_field_value = 'New Preset'
       savePresets()
-      ac.setOnboardCameraParams(0, ac.getOnboardCameraDefaultParams(0))
+      ac.setOnboardCameraParams(0, ac.getOnboardCameraDefaultParams(0), false)
       ac.resetFirstPersonCameraFOV()
     end
   end
