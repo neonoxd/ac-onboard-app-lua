@@ -9,15 +9,42 @@ local function deepCopy(t)
   return copy
 end
 
+local split_mode = "both" -- can be "x", "y", or "both"
 local cam_drag_start_pos = vec2(0, 0)
 local cam_dragging = false
 local joystick_offset = vec2(0, 0)
 local function drawSeatPositionAdjustment(dt)
   local cam_params = ac.getOnboardCameraParams(0)
+  local bg_size = vec2(128, 128)
+  local mode_btn_width = 48
+  
+  -- Toggle between axis modes [X, Y, BOTH]
+  local toggle_curs = ui.getCursor()
+  ui.drawRectFilled(toggle_curs + vec2(bg_size.x - mode_btn_width, 4), toggle_curs + vec2(bg_size.x -1, 32), rgbm(0.7, 0.3, 0.3, 0.5), 3)
+  ui.drawText(split_mode:upper(), toggle_curs + vec2(bg_size.x - mode_btn_width + 6, 4), rgbm(1, 1, 1, 1))
+
+  ui.setCursor(toggle_curs + vec2(bg_size.x - mode_btn_width, 4))
+  ui.invisibleButton('toggleAxisMode', vec2(mode_btn_width, 32))
+  if ui.itemHovered() then
+    ui.setMouseCursor(ui.MouseCursor.Hand)
+  end
+  
+  if ui.itemClicked() then
+    if split_mode == "x" then
+      split_mode = "y"
+    elseif split_mode == "y" then
+      split_mode = "both"
+    else
+      split_mode = "x"
+    end
+  end
+
+
+  ui.setCursor(toggle_curs)
   ui.text('Position')
+
   -- Draw Square
   local curs = ui.getCursor()
-  local bg_size = vec2(128, 128)
   ui.drawRectFilled(curs, curs + bg_size, rgbm(0.1, 0.1, 0.1, 1), 3)
   
   -- Draw Circle in the middle of the square
@@ -37,6 +64,11 @@ local function drawSeatPositionAdjustment(dt)
     end
 
     local delta = mouse_pos - cam_drag_start_pos
+    if split_mode == "x" then
+      delta.y = 0
+    elseif split_mode == "y" then
+      delta.x = 0
+    end
     cam_params.position = cam_params.position + vec3(-delta.x * 0.1 * dt, -delta.y * 0.1 * dt, 0)
     cam_drag_start_pos = mouse_pos
 
