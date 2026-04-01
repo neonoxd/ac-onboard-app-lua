@@ -102,7 +102,7 @@ local function drawSeatPositionAdjustment(dt)
     joystick_offset = vec2(0, 0)
   end
 
-  ac.setOnboardCameraParams(0, cam_params, true)
+  ac.setOnboardCameraParams(0, cam_params, false)
 end
 
 local pitch_drag_start_pos = vec2(0, 0)
