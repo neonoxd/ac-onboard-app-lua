@@ -447,11 +447,17 @@ function script.windowMain(dt)
 end
 
 function script.drawCenterLine(dt)
+
+  if ac.isWindowCollapsed('onboard_app2_main') or not ac.isWindowOpen('onboard_app2_main') then
+    return
+  end
+
   if ui.hotkeyCtrl() then
     local screenSize = render.getRenderTargetSize()
     ui.drawRectFilled(vec2(screenSize.x / 2 - 1, 0), vec2(screenSize.x / 2 + 1, screenSize.y), rgbm(1, 0, 1, 0.5))
     ui.drawRectFilled(vec2(0, screenSize.y / 2 - 1), vec2(screenSize.x, screenSize.y / 2 + 1), rgbm(1, 0, 1, 0.5))
   end
+
 end
 
 loadPresets()
