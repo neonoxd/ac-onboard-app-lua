@@ -1,5 +1,6 @@
 local car_cfg_dir = ac.getFolder(ac.FolderID.Cfg) .. '\\cars\\' .. ac.getCarID(0)
 local modify_multiplier = 1.0
+local pitchInput = '0.0'
 
 local function deepCopy(t)
   if vec3.isvec3(t) then return vec3(t.x, t.y, t.z) end
@@ -121,6 +122,11 @@ local function drawPitchAdjustment(dt)
 
   ui.setCursor(p_curs)
   ui.invisibleButton('##pitch', p_bg_size)
+
+  if ui.itemClicked(ui.MouseButton.Right) then
+    ui.openPopup('pitchContextPopup')
+    pitchInput = tostring(cam_params.pitch)
+  end
 
   if ui.itemActive() then
     local mouse_pos = ui.mouseLocalPos()
@@ -311,12 +317,40 @@ function script.windowMain(dt)
     ui.beginGroup()
       drawDistanceAdjustment(dt)
       ui.textWrapped('Position'.. string.format(' (%.3f, %.3f, %.3f)', cam_params.position.x, cam_params.position.y, cam_params.position.z))
+      local precursor = ui.getCursor()
       ui.textWrapped('Pitch: ' .. string.format('%.3f', cam_params.pitch))
+      local postcursor = ui.getCursor()
+
+      ui.setCursor(precursor)
+      ui.invisibleButton('pitchContext', vec2(86, postcursor.y - precursor.y))
+      if ui.itemClicked(ui.MouseButton.Right) then
+        ui.openPopup('pitchContextPopup')
+        pitchInput = tostring(cam_params.pitch)
+      end
+
+      -- Context menu for pitch input
+      if ui.beginPopup('pitchContextPopup') then
+        ui.text('Edit pitch value:')
+        local changed, enter_pressed = false, false
+        pitchInput, changed, enter_pressed = ui.inputText('##pitchInput', pitchInput, ui.InputTextFlags.FocusByDefault)
+        if enter_pressed then
+          local new_pitch = tonumber(pitchInput)
+          if new_pitch then
+            cam_params.pitch = new_pitch
+            ac.setOnboardCameraParams(0, cam_params, false)
+            ui.closePopup()
+          end
+        end
+        ui.endPopup()
+      end
+
+
+      ui.setCursor(postcursor)
       ui.offsetCursorY(8)
 
       -- FoV slider
       ui.text('Field of View')
-      local new_fov, fov_changed = ui.slider('##FoV', ac.getCameraFOV(), 30, 120, '%.3f', true)
+      local new_fov, fov_changed = ui.slider('##FoV', ac.getCameraFOV(), 1, 125, '%.3f', true)
       ac.debug('New fov', new_fov)
       if fov_changed then
         ac.setFirstPersonCameraFOV(new_fov)
