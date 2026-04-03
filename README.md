@@ -1,7 +1,7 @@
 # Onboard App 2 for Assetto Corsa
 [![Download](https://img.shields.io/badge/Download-Latest-blue)](https://github.com/neonoxd/ac-onboard-app-lua/releases/latest)
 
-<img width="653" height="294" alt="acs_hpZDy1BjpP" src="https://github.com/user-attachments/assets/b4b1c687-2e7a-4fbf-9e01-eb9212ef506f" />
+![acs_tND1s9Nwo8](https://github.com/user-attachments/assets/8c34e19f-af20-4fc0-8591-1814c89c9ca6)
 
 ## Overview
 Onboard App 2 aims to be a complete replacement of the built in Onboard Settings app, utilizing features by CSP Lua API
