@@ -1,4 +1,5 @@
 local car_cfg_dir = ac.getFolder(ac.FolderID.Cfg) .. '\\cars\\' .. ac.getCarID(0)
+local modify_multiplier = 1.0
 
 local function deepCopy(t)
   if vec3.isvec3(t) then return vec3(t.x, t.y, t.z) end
@@ -79,7 +80,7 @@ local function drawSeatPositionAdjustment(dt)
     elseif split_mode == "y" then
       delta.x = 0
     end
-    cam_params.position = cam_params.position + vec3(-delta.x * 0.1 * dt, -delta.y * 0.1 * dt, 0)
+    cam_params.position = cam_params.position + vec3(-delta.x * 0.1 * dt * modify_multiplier, -delta.y * 0.1 * dt * modify_multiplier, 0)
     cam_drag_start_pos = mouse_pos
 
     -- Clamp the circle position to the square
@@ -130,7 +131,7 @@ local function drawPitchAdjustment(dt)
     end
 
     local delta = mouse_pos - pitch_drag_start_pos
-    cam_params.pitch = cam_params.pitch - delta.y * 1.5 * dt
+    cam_params.pitch = cam_params.pitch - delta.y * 1.5 * dt * modify_multiplier
     pitch_offset = vec2(0, delta.y)
     pitch_drag_start_pos = mouse_pos
   elseif not ui.itemActive() then
@@ -175,7 +176,7 @@ local function drawDistanceAdjustment(dt)
     end
 
     local delta = mouse_pos - distance_drag_start_pos
-    cam_params.position = cam_params.position + vec3(0, 0, delta.x * 0.1 * dt)
+    cam_params.position = cam_params.position + vec3(0, 0, delta.x * 0.1 * dt * modify_multiplier)
     distance_offset = vec2(delta.x, 0)
     distance_drag_start_pos = mouse_pos
   end
@@ -455,6 +456,11 @@ function script.drawCenterLine(dt)
     local screenSize = render.getRenderTargetSize()
     ui.drawRectFilled(vec2(screenSize.x / 2 - 1, 0), vec2(screenSize.x / 2 + 1, screenSize.y), rgbm(1, 0, 1, 0.5))
     ui.drawRectFilled(vec2(0, screenSize.y / 2 - 1), vec2(screenSize.x, screenSize.y / 2 + 1), rgbm(1, 0, 1, 0.5))
+    modify_multiplier = 0.1
+  elseif ui.hotkeyShift() then
+    modify_multiplier = 2.0
+  else
+    modify_multiplier = 1.0
   end
 
 end
