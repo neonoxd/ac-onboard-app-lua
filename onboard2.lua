@@ -293,7 +293,7 @@ function script.windowMain(dt)
   ac.debug('current car', car_id)
 
   if cam_dragging or pitch_dragging or distance_dragging then
-    ac.hideMouseCursor(true)
+    if ac.hideMouseCursor then ac.hideMouseCursor(true) end
   end
 
   ui.beginGroup()
