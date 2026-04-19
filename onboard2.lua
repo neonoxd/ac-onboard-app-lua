@@ -407,12 +407,24 @@ function script.windowMain(dt)
 
   if ui.button("Set as Default", vec2(ui.availableSpaceX() / 2, 0)) then
     local cfg_path = car_cfg_dir .. '\\view.ini'
+    -- check if car_cfg_dir exists
+    local cfg_dir_f = io.open(car_cfg_dir, 'r')
+    if not cfg_dir_f then
+      -- try to create directory
+      local success, err = os.execute('mkdir "' .. car_cfg_dir .. '"')
+      if not success then
+        ui.toast(ui.Icons.Warning, 'Failed to create config directory: ' .. err)
+        return
+      end
+    end
+
     local iniConfig = ac.INIConfig.load(cfg_path, ac.INIFormat.Default)
     local eyes_str = string.format('%f,%f,%f', cam_params.position.x, cam_params.position.y, cam_params.position.z)
     local pitch_in_degrees = cam_params.pitch * math.pi / 180
 
-    iniConfig:setAndSave('CAMERA', 'ON_BOARD_PITCH_ANGLE', pitch_in_degrees)
-    iniConfig:setAndSave('DRIVER_EYES_POSITION', 'DRIVEREYES', eyes_str)
+    iniConfig:set('CAMERA', 'ON_BOARD_PITCH_ANGLE', pitch_in_degrees)
+    iniConfig:set('DRIVER_EYES_POSITION', 'DRIVEREYES', eyes_str)
+    iniConfig:save(cfg_path)
     ui.toast(ui.Icons.Info, 'Current camera position saved to view.ini')
   end
 
