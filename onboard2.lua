@@ -4,6 +4,42 @@ local current_focused_idx = 0
 local last_focused_idx = 0
 local sim = ac.getSim()
 
+local function getMouseScreenPosition()
+  local position = ac.getUI().mousePos
+  return vec2(position.x, position.y)
+end
+
+local function getContinuousDragDelta(previous_position)
+  local mouse_position = getMouseScreenPosition()
+  local delta = mouse_position - previous_position
+
+  if ac.setMousePosition and mouse_position.x >= 0 and mouse_position.y >= 0 then
+    local ui_state = ac.getUI()
+    local screen_size = ui_state.windowSize
+    local margin = 4
+    local wrapped_position = vec2(mouse_position.x, mouse_position.y)
+
+    if mouse_position.x <= margin then
+      wrapped_position.x = screen_size.x - margin
+    elseif mouse_position.x >= screen_size.x - margin then
+      wrapped_position.x = margin
+    end
+
+    if mouse_position.y <= margin then
+      wrapped_position.y = screen_size.y - margin
+    elseif mouse_position.y >= screen_size.y - margin then
+      wrapped_position.y = margin
+    end
+
+    if wrapped_position.x ~= mouse_position.x or wrapped_position.y ~= mouse_position.y then
+      ac.setMousePosition(wrapped_position * ui_state.uiScale)
+      mouse_position = wrapped_position
+    end
+  end
+
+  return delta, mouse_position
+end
+
 local function get_cfg_dir()
   return ac.getFolder(ac.FolderID.Cfg) .. '\\cars\\' .. ac.getCarID(current_focused_idx)
 end
@@ -73,22 +109,20 @@ local function drawSeatPositionAdjustment(dt)
   ui.setCursor(curs)
   ui.invisibleButton('joystick', bg_size)
   -- If the invisible button is held, move the circle with the mouse
-  if ui.itemActive() then
-    local mouse_pos = ui.mouseLocalPos()
-    
-    if not cam_dragging then
-      cam_dragging = true
-      cam_drag_start_pos = mouse_pos
-    end
+  if ui.itemActive() and not cam_dragging then
+    cam_dragging = true
+    cam_drag_start_pos = getMouseScreenPosition()
+  end
 
-    local delta = mouse_pos - cam_drag_start_pos
+  if cam_dragging and ui.mouseDown(ui.MouseButton.Left) then
+    local delta
+    delta, cam_drag_start_pos = getContinuousDragDelta(cam_drag_start_pos)
     if split_mode == "x" then
       delta.y = 0
     elseif split_mode == "y" then
       delta.x = 0
     end
     cam_params.position = cam_params.position + vec3(-delta.x * 0.1 * dt * modify_multiplier, -delta.y * 0.1 * dt * modify_multiplier, 0)
-    cam_drag_start_pos = mouse_pos
 
     -- Clamp the circle position to the square
     local max_offset = bg_size / 2 - vec2(radius, radius)
@@ -97,12 +131,12 @@ local function drawSeatPositionAdjustment(dt)
       math.max(-max_offset.y, math.min(max_offset.y, delta.y))
     )
     ui.setMouseCursor(ui.MouseCursor.ResizeAll)
-  end
-  if not ui.itemActive() then
+  elseif cam_dragging then
     cam_dragging = false
-    if ui.itemHovered() then
-      ui.setMouseCursor(ui.MouseCursor.ResizeAll)
-    end
+  end
+
+  if not cam_dragging and ui.itemHovered() then
+    ui.setMouseCursor(ui.MouseCursor.ResizeAll)
   end
 
   joystick_offset = joystick_offset * 0.9
@@ -134,23 +168,22 @@ local function drawPitchAdjustment(dt)
     pitchInput = tostring(cam_params.pitch)
   end
 
-  if ui.itemActive() then
-    local mouse_pos = ui.mouseLocalPos()
+  if ui.itemActive() and not pitch_dragging then
+    pitch_dragging = true
+    pitch_drag_start_pos = getMouseScreenPosition()
+  end
 
-    if not pitch_dragging then
-      pitch_dragging = true
-      pitch_drag_start_pos = mouse_pos
-    end
-
-    local delta = mouse_pos - pitch_drag_start_pos
+  if pitch_dragging and ui.mouseDown(ui.MouseButton.Left) then
+    local delta
+    delta, pitch_drag_start_pos = getContinuousDragDelta(pitch_drag_start_pos)
     cam_params.pitch = cam_params.pitch - delta.y * 1.5 * dt * modify_multiplier
     pitch_offset = vec2(0, delta.y)
-    pitch_drag_start_pos = mouse_pos
-  elseif not ui.itemActive() then
+  elseif pitch_dragging then
     pitch_dragging = false
-    if ui.itemHovered() then
-      ui.setMouseCursor(ui.MouseCursor.ResizeNS)
-    end
+  end
+
+  if not pitch_dragging and ui.itemHovered() then
+    ui.setMouseCursor(ui.MouseCursor.ResizeNS)
   end
 
   pitch_offset = pitch_offset * 0.6
@@ -179,24 +212,22 @@ local function drawDistanceAdjustment(dt)
   ui.setCursor(d_curs)
   ui.invisibleButton('##distance', d_bg_size)
 
-  if ui.itemActive() then
-    local mouse_pos = ui.mouseLocalPos()
+  if ui.itemActive() and not distance_dragging then
+    distance_dragging = true
+    distance_drag_start_pos = getMouseScreenPosition()
+  end
 
-    if not distance_dragging then
-      distance_dragging = true
-      distance_drag_start_pos = mouse_pos
-    end
-
-    local delta = mouse_pos - distance_drag_start_pos
+  if distance_dragging and ui.mouseDown(ui.MouseButton.Left) then
+    local delta
+    delta, distance_drag_start_pos = getContinuousDragDelta(distance_drag_start_pos)
     cam_params.position = cam_params.position + vec3(0, 0, delta.x * 0.1 * dt * modify_multiplier)
     distance_offset = vec2(delta.x, 0)
-    distance_drag_start_pos = mouse_pos
-  end
-  if not ui.itemActive() then
+  elseif distance_dragging then
     distance_dragging = false
-    if ui.itemHovered() then
-      ui.setMouseCursor(ui.MouseCursor.ResizeEW)
-    end
+  end
+
+  if not distance_dragging and ui.itemHovered() then
+    ui.setMouseCursor(ui.MouseCursor.ResizeEW)
   end
   distance_offset = distance_offset * 0.6
   if distance_offset:closerToThan(vec2(0, 0), 1) then
